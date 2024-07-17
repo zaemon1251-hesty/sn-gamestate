@@ -24,8 +24,8 @@ SoccerNet Game State Reconstruction (GSR) is a novel computer vision task involv
 🔎 𝐖𝐨𝐫𝐤 𝐇𝐢𝐠𝐡𝐥𝐢𝐠𝐡𝐭𝐬:
 We introduce a new benchmark for Game State Reconstruction, including a new 𝐝𝐚𝐭𝐚𝐬𝐞𝐭 with 200 annotated clips and a new 𝐞𝐯𝐚𝐥𝐮𝐚𝐭𝐢𝐨𝐧 𝐦𝐞𝐭𝐫𝐢𝐜. Additionally, we release this 𝐜𝐨𝐝𝐞𝐛𝐚𝐬𝐞 which leverages various state-of-the-art deep learning methods to support further research on the task.
 
-Participate in our upcoming Challenges during the [CVPR 2024 International Challenge at the CVSports Workshop](https://vap.aau.dk/cvsports/)! 
-The participation deadline is fixed at the 30th of May 2024. 
+Participate in our upcoming Challenges during the [CVPR 2024 International Challenge at the CVSports Workshop](https://vap.aau.dk/cvsports/)!
+The participation deadline is fixed at the 30th of May 2024.
 The official challenge rules and submission instructions are available in [ChallengeRules.md](ChallengeRules.md). You can submit your predictions to the
 [EvalAI evaluation server](https://eval.ai/web/challenges/challenge-page/2251/overview).
 
@@ -37,12 +37,12 @@ The official challenge rules and submission instructions are available in [Chall
 > We updated the bbox-pitch annotations to improve temporal consistency.
 > Make sure you're at least on version 1.3 of the dataset.
 > In Labels-GameState.json: "info" > "version" >= 1.3
-> 
+>
 > Current latest version : `1.3`
 
 This codebase is still under active development, please make sure to come back regularly to get recent updates!
 Do not forget to update both the sn-gamestate and tracklab repositories to the latest commits.
-Feel free to open a GitHub issue or interact with us on our [official Discord channel](https://discord.com/invite/cPbqf2mAwF) if you encounter any issue: we will 
+Feel free to open a GitHub issue or interact with us on our [official Discord channel](https://discord.com/invite/cPbqf2mAwF) if you encounter any issue: we will
 be happy to help with detailed instructions.
 
 #### Upcoming
@@ -59,7 +59,7 @@ be happy to help with detailed instructions.
 - [2024.05.13] V1.3 of the dataset released with updated bbox-pitch annotations.
 - [2024.05.08] Release of the baseline challenge tracker state : https://zenodo.org/records/11143697
 - [2024.04.25] Release of the baseline validation and test tracker states : https://zenodo.org/records/11065177
-- [2024.03.27] Release of submission instructions in [ChallengeRules.md](ChallengeRules.md). 
+- [2024.03.27] Release of submission instructions in [ChallengeRules.md](ChallengeRules.md).
 - [2024.03.26] [EvalAI servers](https://eval.ai/web/challenges/challenge-page/2251/overview) open for evaluation
 - [2024.03.21] V1.2 of the dataset released, with fixed left/right team labels
 - [2024.02.13] Complete baseline released
@@ -78,9 +78,9 @@ The high level information to be extracted includes the following:
 
 This high level information can be nicely displayed as a 2D minimap, or radar view, as shown in the GIF above.
 Game State Reconstruction is a challenging task as it requires to solve several subtasks such as:
-1. Pitch localization and camera calibration 
-2. Person detection, re-identification and tracking 
-3. Jersey number recognition 
+1. Pitch localization and camera calibration
+2. Person detection, re-identification and tracking
+3. Jersey number recognition
 4. Team affiliation
 
 For more information, please have a look at our [introductory Youtube video](https://www.youtube.com/watch?v=UDeSdOR9Ing) and [more exhaustive tutorial](https://www.youtube.com/watch?v=Ir-6D3j_lkA&t=1553s).
@@ -100,15 +100,15 @@ Sim_{\text{GS-HOTA}}(P, G) = \text{LocSim}(P, G) \times \text{IdSim}(P, G)
 ```
 
 ```math
-\text{and IdSim}(P, G) = 
-\begin{cases} 
+\text{and IdSim}(P, G) =
+\begin{cases}
 1 & \text{if all attributes match,} \\
 0 & \text{otherwise.}
 \end{cases}
 ```
 
 $Sim_{\text{GS-HOTA}}$, is therefore a combination of two similarity metrics.
-The first metric, the localization similarity $\text{LocSim}(P, G)$, computes the Euclidean distance $\|P - G\|_2$ between prediction P and ground truth G in the pitch coordinate system. 
+The first metric, the localization similarity $\text{LocSim}(P, G)$, computes the Euclidean distance $\|P - G\|_2$ between prediction P and ground truth G in the pitch coordinate system.
 This distance is subsequently processed using a Gaussian kernel with a special distance tolerance parameter $\tau$ set to 5 meters, resulting in a final score falling within the $[0, 1]$ range.
 The second metric, the identification similarity $\text{IdSim}(P, G)$, is set to one only if all attributes match, i.e. role, team, and jersey numbers.
 Attributes not provided in G are ignored, e.g. jersey numbers for referees.
@@ -122,7 +122,7 @@ We refer readers to the official paper for detailed description and discussion a
 For the purpose of this challenge, we use the [TrackLab framework](https://github.com/TrackingLaboratory/tracklab), an open-source modular tracking framework.
 The [TrackLab repository](https://github.com/TrackingLaboratory/tracklab) contains all generic code related to multi-object tracking (object detection, re-identification, tracking algorithms, etc), whereas the [sn-gamestate repository](https://github.com/SoccerNet/sn-gamestate) contains the additional code specific to the SoccerNet Game State Reconstruction task (jersey number recognition, team affiliation, etc).
 The diagram below represents the complete pipeline of the baseline.
-TrackLab make it easy to add/customize/replace modules in the pipeline. 
+TrackLab make it easy to add/customize/replace modules in the pipeline.
 This enables participants to focus on one or more specific subtask of the challenge, without worrying about other tasks.
 We strongly encourage participants to analyse some videos to build a better intuition on which part of the pipeline should be improved.
 We provide more technical details about all components of the baseline in the [SoccerNet Game State Reconstruction paper](https://arxiv.org/abs/2404.11335).
@@ -133,11 +133,11 @@ We provide more technical details about all components of the baseline in the [S
 This guide will tell you how to install the framework, download the dataset and all models weights, and run the baseline on a single video from the validation set.
 Tracklab will create a `.mp4` video showcasing the game state reconstruction results under `output/{date}/{time}/visualization/videos/021.mp4` in your current working directory.
 
-### 1. Installing TrackLab and the GameState baseline 
+### 1. Installing TrackLab and the GameState baseline
 Before running the baseline for the first time, you will need to clone the project and setup the environment as described below.
 
 #### Clone the repositories
-First git clone this repository, and the [TrackLab framework](https://github.com/TrackingLaboratory/tracklab) *in adjacent directories* : 
+First git clone this repository, and the [TrackLab framework](https://github.com/TrackingLaboratory/tracklab) *in adjacent directories* :
 ```bash
 mkdir soccernet
 cd soccernet
@@ -151,7 +151,7 @@ git clone https://github.com/TrackingLaboratory/tracklab.git
 
 #### Option 1: Install using Poetry
 1. Install poetry : https://python-poetry.org/docs/#installing-with-the-official-installer
-2. Install the dependencies : 
+2. Install the dependencies :
 ```bash
 cd sn-gamestate
 poetry install
@@ -164,12 +164,12 @@ or prefix all commands by `poetry run`.
 
 #### Option 2: Install using conda
 1. Install conda : https://docs.conda.io/projects/miniconda/en/latest/
-2. Create a new conda environment : 
-```bash 
+2. Create a new conda environment :
+```bash
 conda create -n tracklab pip python=3.10 pytorch==1.13.1 torchvision==0.14.1 pytorch-cuda=11.7 -c pytorch -c nvidia -y
 conda activate tracklab
 ```
-3. Install all the dependencies with : 
+3. Install all the dependencies with :
 ```bash
 cd sn-gamestate
 pip install -e .
@@ -185,7 +185,7 @@ git pull
 git -C ../tracklab pull
 ```
 
-After updating, you should rerun the installation of the dependencies in case they are updated 
+After updating, you should rerun the installation of the dependencies in case they are updated
 (either running `poetry install` or *both* `pip install`'s).
 
 We will advertise big updates on the [soccernet discord](https://discord.com/invite/cPbqf2mAwF).
@@ -198,7 +198,7 @@ If you choose this option, you can go directly to the next step.
 
 #### Manual downloading of SoccerNet-gamestate
 If you want to download the dataset manually, you can run the following snippet
-after installing the soccernet package (`pip install SoccerNet`) : 
+after installing the soccernet package (`pip install SoccerNet`) :
 
 ```
 from SoccerNet.Downloader import SoccerNetDownloader
@@ -207,7 +207,7 @@ mySoccerNetDownloader.downloadDataTask(task="gamestate-2024",
                                        split=["train", "valid", "test", "challenge"])
 ```
 
-After running this code, please unzip the folders, so that the data looks like : 
+After running this code, please unzip the folders, so that the data looks like :
 ```
 data/
    SoccerNetGS/
@@ -217,7 +217,7 @@ data/
       challenge/
 ```
 
-You can unzip them with the following command line : 
+You can unzip them with the following command line :
 ```bash
 cd data/SoccerNetGS
 unzip gamestate-2024/train.zip -d train
@@ -228,8 +228,8 @@ cd ../..
 ```
 
 #### Updating the dataset
-> [!IMPORTANT] 
-> The current dataset version is **v1.3**. Please check inside 
+> [!IMPORTANT]
+> The current dataset version is **v1.3**. Please check inside
 > one of the "Labels-GameState.json" that this is indeed
 > the version you're currently using.
 
@@ -254,7 +254,7 @@ You will need to set up some variables before running the code in [soccernet.yam
 - All the parameters under the "Machine configuration" header. For the corresponding modules :
   - The `batch_size` (lower these values if you encounter memory issues)
   - You might want to change the model hyperparameters
- 
+
 #### Command Line
 Finally, run the SoccerNet Game State Reconstruction baseline with the following command :
 ```bash
@@ -263,7 +263,7 @@ python -m tracklab.main -cn soccernet
 By default, this command will perform game state reconstruction on one SoccerNet validation sequence, display results in a .mp4 video saved on disk and print the final performance metric.
 As a reminder, the dataset and all model's weights will be downloaded automatically on the first run.
 
-You can find all possible configuration groups at the top when running the following command :  
+You can find all possible configuration groups at the top when running the following command :
 ```bash
 python -m tracklab.main --help
 ```
@@ -277,13 +277,13 @@ You can have a look at the default parameters in [soccernet.yaml](sn_gamestate/c
 We invite users to read carefully the following resources:
 1. [TrackLab README](https://github.com/TrackingLaboratory/tracklab/blob/main/README.md) for further instructions about the framework.
 2. [soccernet.yaml](sn_gamestate/configs/soccernet.yaml) for more information about the available configurations.
-3. [Hydra's tutorial](https://hydra.cc/docs/tutorials/intro/) to better understand how to configure TrackLab. 
+3. [Hydra's tutorial](https://hydra.cc/docs/tutorials/intro/) to better understand how to configure TrackLab.
 
 ### Adding a new module
 
 If you want to add a new module in the tracklab pipeline, you can either add it in this repository,
-by adding code in (a new directory in) [sn_gamestate](sn_gamestate) and configuration files in 
-[sn_gamestate/configs/modules](sn_gamestate/configs/modules), which will be added automatically. 
+by adding code in (a new directory in) [sn_gamestate](sn_gamestate) and configuration files in
+[sn_gamestate/configs/modules](sn_gamestate/configs/modules), which will be added automatically.
 
 If you would like to create a separate project that makes use of tracklab, you will need to declare
 the location of your config file using an [entry point](https://setuptools.pypa.io/en/stable/userguide/entry_point.html#entry-points-for-plugins).
@@ -295,7 +295,7 @@ Temporarily, you can also specify a directory using Hydra's `--config-dir`.
 The Tracker State is where Tracklab saves all tracking predictions, i.e., all detections and their information, such as bounding box, reid embeddings, jersey number, track ids, etc.
 A Tracker State can be saved to disk and loaded back to save computation time on the next run.
 Please have a look at the [Tracklab Tutorial on using Tracker States](https://github.com/TrackingLaboratory/tracklab?tab=readme-ov-file#dump-and-load-the-tracker-state-to-save-computation-time) for more information.
-We provide the Tracker State of the baseline for the [validation set](https://zenodo.org/records/11065177/files/gamestate-prtreid-strongsort-valid-compressed.pklz?download=1), the [test set](https://zenodo.org/records/11065177/files/gamestate-prtreid-strongsort-test-compressed.pklz?download=1), and the 
+We provide the Tracker State of the baseline for the [validation set](https://zenodo.org/records/11065177/files/gamestate-prtreid-strongsort-valid-compressed.pklz?download=1), the [test set](https://zenodo.org/records/11065177/files/gamestate-prtreid-strongsort-test-compressed.pklz?download=1), and the
 [challenge set](https://zenodo.org/records/11143697/files/gamestate-prtreid-strongsort-challenge-compressed.pklz?download=1) on [Zenodo](https://zenodo.org/records/11065177).
 
 ## Troubleshooting
