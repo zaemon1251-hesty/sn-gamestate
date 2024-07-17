@@ -56,6 +56,8 @@ be happy to help with detailed instructions.
 - [ ] Release of new visualization tool (cf. demo video and gif)
 
 #### Updates:
+- [2024.07.10] Addition of ["No Bells, Just Whistles"](https://github.com/mguti97/No-Bells-Just-Whistles) calibration.
+To test, use "nbjw_calib" instead of "tvcalib" in `soccernet.yaml`, for `pitch` and `calibration`.
 - [2024.05.13] V1.3 of the dataset released with updated bbox-pitch annotations.
 - [2024.05.08] Release of the baseline challenge tracker state : https://zenodo.org/records/11143697
 - [2024.04.25] Release of the baseline validation and test tracker states : https://zenodo.org/records/11065177
@@ -76,7 +78,7 @@ The high level information to be extracted includes the following:
   - Their jersey number
   - Their team affiliation (i.e. left or right w.r.t. the camera viewpoint)
 
-This high level information can be nicely displayed as a 2D minimap, or radar view, as shown in the GIF above.
+This high level information can be nicely displayed as a 2D minimap, radar view, or bird's-eye view (BEV) as shown in the GIF above.
 Game State Reconstruction is a challenging task as it requires to solve several subtasks such as:
 1. Pitch localization and camera calibration
 2. Person detection, re-identification and tracking
