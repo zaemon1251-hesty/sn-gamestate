@@ -6,6 +6,7 @@ from omegaconf import OmegaConf
 from yacs.config import CfgNode as CN
 
 from tracklab.pipeline import DetectionLevelModule
+
 # FIXME this should be removed and use KeypointsSeriesAccessor and KeypointsFrameAccessor
 from tracklab.utils.coordinates import rescale_keypoints
 from tracklab.utils.collate import default_collate
@@ -38,9 +39,22 @@ from tracklab.utils.download import download_file
 class PRTReId(DetectionLevelModule):
     collate_fn = default_collate
     input_columns = ["bbox_ltwh"]
-    output_columns = ["embeddings", "visibility_scores", "body_masks", "role_detection", "role_confidence"]
+    output_columns = [
+        "embeddings",
+        "visibility_scores",
+        "body_masks",
+        "role_detection",
+        "role_confidence",
+    ]
     forget_columns = ["embeddings", "body_masks"]
-    role_mapping = {'ball': 0, 'goalkeeper': 1, 'other': 2, 'player': 3, 'referee': 4, None: -1}
+    role_mapping = {
+        "ball": 0,
+        "goalkeeper": 1,
+        "other": 2,
+        "player": 3,
+        "referee": 4,
+        None: -1,
+    }
 
     def __init__(
         self,
@@ -77,9 +91,11 @@ class PRTReId(DetectionLevelModule):
             tracking_dataset.nickname,
         )
         self.cfg = CN(OmegaConf.to_container(cfg, resolve=True))
-        self.download_models(load_weights=self.cfg.model.load_weights,
-                             pretrained_path=self.cfg.model.bpbreid.hrnet_pretrained_path,
-                             backbone=self.cfg.model.bpbreid.backbone)
+        self.download_models(
+            load_weights=self.cfg.model.load_weights,
+            pretrained_path=self.cfg.model.bpbreid.hrnet_pretrained_path,
+            backbone=self.cfg.model.bpbreid.backbone,
+        )
         self.inverse_role_mapping = {v: k for k, v in self.role_mapping.items()}
         # set parts information (number of parts K and each part name),
         # depending on the original loaded masks size or the transformation applied:
@@ -96,13 +112,20 @@ class PRTReId(DetectionLevelModule):
     def download_models(self, load_weights, pretrained_path, backbone):
         if Path(load_weights).name == "prtreid-soccernet-baseline.pth.tar":
             md5 = "9633825232bc89f23a94522c5561650e"
-            download_file("https://zenodo.org/records/10653453/files/prtreid-soccernet-baseline.pth.tar?download=1",
-                          local_filename=load_weights, md5=md5)
+            download_file(
+                "https://zenodo.org/records/10653453/files/prtreid-soccernet-baseline.pth.tar?download=1",
+                local_filename=load_weights,
+                md5=md5,
+            )
         if backbone == "hrnet32":
             md5 = "58ea12b0420aa3adaa2f74114c9f9721"
             path = Path(pretrained_path) / "hrnetv2_w32_imagenet_pretrained.pth"
-            download_file("https://zenodo.org/records/10604211/files/hrnetv2_w32_imagenet_pretrained.pth?download=1",
-                          local_filename=path, md5=md5)
+            download_file(
+                "https://zenodo.org/records/10604211/files/hrnetv2_w32_imagenet_pretrained.pth?download=1",
+                local_filename=path,
+                md5=md5,
+            )
+
     @torch.no_grad()
     def preprocess(
         self, image, detection: pd.Series, metadata: pd.Series
@@ -140,13 +163,17 @@ class PRTReId(DetectionLevelModule):
         reid_result = self.feature_extractor(
             im_crops, external_parts_masks=external_parts_masks
         )
-        embeddings, visibility_scores, body_masks, _, role_cls_scores = extract_test_embeddings(
-            reid_result, self.test_embeddings
+        embeddings, visibility_scores, body_masks, _, role_cls_scores = (
+            extract_test_embeddings(reid_result, self.test_embeddings)
         )
-        
+
         role_scores_ = []
-        role_scores_.append(role_cls_scores['globl'].cpu() if role_cls_scores is not None else None)
-        role_scores_ = torch.cat(role_scores_, 0) if role_scores_[0] is not None else None
+        role_scores_.append(
+            role_cls_scores["globl"].cpu() if role_cls_scores is not None else None
+        )
+        role_scores_ = (
+            torch.cat(role_scores_, 0) if role_scores_[0] is not None else None
+        )
         roles = [torch.argmax(i).item() for i in role_scores_]
         roles = [self.inverse_role_mapping[index] for index in roles]
         role_confidence = [torch.max(i).item() for i in role_scores_]
