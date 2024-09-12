@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 import numpy as np
 from mmocr.apis import MMOCRInferencer
+
 # from mmengine.infer.infer import BaseInferencer
 from mmocr.apis import TextDetInferencer, TextRecInferencer
 from mmocr.utils import ConfigType, bbox2poly, crop_img, poly2bbox
@@ -22,12 +23,13 @@ class MMOCR(DetectionLevelModule):
 
     def __init__(self, batch_size, device, tracking_dataset=None):
         super().__init__(batch_size=batch_size)
-        self.ocr = MMOCRInferencer(det='dbnet_resnet18_fpnc_1200e_icdar2015', rec='SAR')
+        self.ocr = MMOCRInferencer(det="dbnet_resnet18_fpnc_1200e_icdar2015", rec="SAR")
         self.batch_size = batch_size
 
         self.textdetinferencer = TextDetInferencer(
-            'dbnet_resnet18_fpnc_1200e_icdar2015', device=device)
-        self.textrecinferencer = TextRecInferencer('SAR', device=device)
+            "dbnet_resnet18_fpnc_1200e_icdar2015", device=device
+        )
+        self.textrecinferencer = TextRecInferencer("SAR", device=device)
 
     def no_jersey_number(self):
         return None, 0
@@ -50,11 +52,11 @@ class MMOCR(DetectionLevelModule):
         return batch
 
     def extract_numbers(self, text):
-        number = ''
+        number = ""
         for char in text:
             if char.isdigit():
                 number += char
-        return number if number != '' else None
+        return number if number != "" else None
 
     def choose_best_jersey_number(self, jersey_numbers, jn_confidences):
         if len(jersey_numbers) == 0:
@@ -62,19 +64,22 @@ class MMOCR(DetectionLevelModule):
         else:
             jn_confidences = np.array(jn_confidences)
             idx_sort = np.argsort(jn_confidences)
-            return jersey_numbers[idx_sort[-1]], jn_confidences[
-                idx_sort[-1]]  # return the highest confidence jersey number
+            return (
+                jersey_numbers[idx_sort[-1]],
+                jn_confidences[idx_sort[-1]],
+            )  # return the highest confidence jersey number
 
     def extract_jersey_numbers_from_ocr(self, prediction):
         jersey_numbers = []
         jn_confidences = []
-        for txt, conf in zip(prediction['rec_texts'], prediction['rec_scores']):
+        for txt, conf in zip(prediction["rec_texts"], prediction["rec_scores"]):
             jn = self.extract_numbers(txt)
             if jn is not None:
                 jersey_numbers.append(jn)
                 jn_confidences.append(conf)
-        jersey_number, jn_confidence = self.choose_best_jersey_number(jersey_numbers,
-                                                                      jn_confidences)
+        jersey_number, jn_confidence = self.choose_best_jersey_number(
+            jersey_numbers, jn_confidences
+        )
         if jersey_number is not None:
             jersey_number = jersey_number[:2]  # Only two-digit numbers are possible
         return jersey_number, jn_confidence
@@ -83,8 +88,8 @@ class MMOCR(DetectionLevelModule):
     def process(self, batch, detections: pd.DataFrame, metadatas: pd.DataFrame):
         jersey_number_detection = []
         jersey_number_confidence = []
-        images_np = [img.cpu().numpy() for img in batch['img']]
-        del batch['img']
+        images_np = [img.cpu().numpy() for img in batch["img"]]
+        del batch["img"]
         # for img in batch['img']:
         #     img = img.cpu().numpy()
         # images_np = batch['img']
@@ -100,28 +105,27 @@ class MMOCR(DetectionLevelModule):
             jersey_number_detection.append(jn)
             jersey_number_confidence.append(conf)
 
-        detections['jersey_number_detection'] = jersey_number_detection
-        detections['jersey_number_confidence'] = jersey_number_confidence
+        detections["jersey_number_detection"] = jersey_number_detection
+        detections["jersey_number_confidence"] = jersey_number_confidence
 
         return detections
 
     def run_mmocr_inference(self, images_np):
         # print('run detection inference')
         result = {}
-        result['det'] = self.textdetinferencer(
+        result["det"] = self.textdetinferencer(
             images_np,
             return_datasamples=True,
             batch_size=self.batch_size,
             progress_bar=False,
-        )['predictions']
+        )["predictions"]
 
         # print('run recognition inference')
-        result['rec'] = []
-        for img, det_data_sample in zip(
-                images_np, result['det']):
+        result["rec"] = []
+        for img, det_data_sample in zip(images_np, result["det"]):
             det_pred = det_data_sample.pred_instances
             rec_inputs = []
-            for polygon in det_pred['polygons']:
+            for polygon in det_pred["polygons"]:
                 # Roughly convert the polygon to a quadangle with
                 # 4 points
                 quad = bbox2poly(poly2bbox(polygon)).tolist()
@@ -130,21 +134,22 @@ class MMOCR(DetectionLevelModule):
                     # rec_input = np.zeros((1, 1, 3), dtype=np.uint8)
                     continue
                 rec_inputs.append(rec_input)
-            result['rec'].append(
+            result["rec"].append(
                 self.textrecinferencer(
                     rec_inputs,
                     return_datasamples=True,
                     batch_size=self.batch_size,
-                    progress_bar=False)['predictions'])
+                    progress_bar=False,
+                )["predictions"]
+            )
 
-        pred_results = [{} for _ in range(len(result['rec']))]
-        for i, rec_pred in enumerate(result['rec']):
+        pred_results = [{} for _ in range(len(result["rec"]))]
+        for i, rec_pred in enumerate(result["rec"]):
             result_out = dict(rec_texts=[], rec_scores=[])
             for rec_pred_instance in rec_pred:
-                rec_dict_res = self.textrecinferencer.pred2dict(
-                    rec_pred_instance)
-                result_out['rec_texts'].append(rec_dict_res['text'])
-                result_out['rec_scores'].append(rec_dict_res['scores'])
+                rec_dict_res = self.textrecinferencer.pred2dict(rec_pred_instance)
+                result_out["rec_texts"].append(rec_dict_res["text"])
+                result_out["rec_scores"].append(rec_dict_res["scores"])
             pred_results[i].update(result_out)
 
         return pred_results
