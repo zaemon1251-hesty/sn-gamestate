@@ -51,6 +51,7 @@ class TrackletTeamSideLabeling(VideoLevelModule):
         goalkeepers = detections[detections.role == "goalkeeper"].dropna(
             subset=["bbox_pitch"]
         )
+        # x_bottom_middle >0 ならセンターラインより右側にいる、という意味
         gk_team = goalkeepers.bbox_pitch.apply(
             lambda bbox: "right" if (bbox["x_bottom_middle"] > 0) else "left"
         )

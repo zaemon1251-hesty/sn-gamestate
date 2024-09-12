@@ -8,6 +8,15 @@ import logging
 log = logging.getLogger(__name__)
 
 
+INPUT_IMAGE_WIDTH = 1280
+
+
+def center_point(bbox: list[int]):
+    # Input: bbox [left, top, width, height]
+    # Output: center point of bbox [x, y]
+    return {"x": bbox[0] + bbox[2] / 2, "y": bbox[1] + bbox[3] / 2}
+
+
 class TrackletTeamSideLabelingWithNaiveBbox(VideoLevelModule):
     """
     bbox_detector (yolov8) で検出bboxに基づいて team_cluster 0,1 のどちらが left or right なのか決定する
@@ -28,11 +37,11 @@ class TrackletTeamSideLabelingWithNaiveBbox(VideoLevelModule):
         team_a = detections[detections.team_cluster == 0]
         team_b = detections[detections.team_cluster == 1]
         xa_coordinates = [
-            bbox["x_bottom_middle"] if isinstance(bbox, dict) else np.nan
+            center_point(bbox).get("x") if isinstance(bbox, dict) else np.nan
             for bbox in team_a.bbox_ltwh
-        ]  # (x, y) are the center of a bbox
+        ]  # [left_top_x, left_top_y, width, height]
         xb_coordinates = [
-            bbox["x_bottom_middle"] if isinstance(bbox, dict) else np.nan
+            center_point(bbox).get("x") if isinstance(bbox, dict) else np.nan
             for bbox in team_b.bbox_ltwh
         ]  # (x, y) are the center of a bbox
 
@@ -51,7 +60,13 @@ class TrackletTeamSideLabelingWithNaiveBbox(VideoLevelModule):
             subset=["bbox_ltwh"]
         )
         gk_team = goalkeepers.bbox_ltwh.apply(
-            lambda bbox: "right" if (bbox["x_bottom_middle"] > 0) else "left"
+            lambda bbox: (
+                "right"
+                if (
+                    center_point(bbox).get("x") > INPUT_IMAGE_WIDTH / 2
+                )  # 画像の中心より右側が多めなら右チーム
+                else "left"
+            )
         )
         detections.loc[goalkeepers.index, "team"] = gk_team
 
