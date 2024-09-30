@@ -61,7 +61,8 @@ modules: # Allows module-specific batch_size and other configuration
   jersey_number_detect: {batch_size: 8}
 
 # Flags
-# test_tracking と eval_tracking の両方がTrueの時のみ evaluation が実行される(片方だけで良くない？)
+# test_tracking = パイプラインが実行されるか
+# eval_tracking = 評価が実行されるか
 test_tracking: True
 eval_tracking: True
 print_config: False
