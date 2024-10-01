@@ -32,7 +32,7 @@ pipeline:
 
 
 # Experiment name
-experiment_name: "sn-gamestate-1"
+experiment_name: "sn-gamestate-gsr"
 
 # Path definitions
 home_dir: "${oc.env:HOME}"
