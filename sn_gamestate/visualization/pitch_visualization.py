@@ -96,12 +96,14 @@ class PitchVisualizationEngine(Callback):
                 image = image
             else:
                 detections = detections[detections.image_id == image_metadata.name]
-                image = self.draw_frame(image_metadata,
-                                        detections, ground_truths, "inf", image=image)
+                image = self.draw_frame(
+                    image_metadata, detections, ground_truths, "inf", image=image
+                )
             if platform.system() == "Linux" and self.video_name not in self.windows:
                 self.windows.append(self.video_name)
-                cv2.namedWindow(str(self.video_name),
-                                cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
+                cv2.namedWindow(
+                    str(self.video_name), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO
+                )  # allow window resize (Linux)
                 cv2.resizeWindow(str(self.video_name), image.shape[1], image.shape[0])
             cv2.imshow(str(self.video_name), image)
             cv2.waitKey(1)
@@ -116,7 +118,9 @@ class PitchVisualizationEngine(Callback):
     ):
         self.video_name = video_metadata.name
 
-    def on_video_loop_end(self, engine, video_metadata, video_idx, detections, image_pred):
+    def on_video_loop_end(
+        self, engine, video_metadata, video_idx, detections, image_pred
+    ):
         if self.cfg.save_videos or self.cfg.save_images:
             if (
                 self.processed_video_counter < self.cfg.process_n_videos
@@ -126,12 +130,27 @@ class PitchVisualizationEngine(Callback):
                     progress = engine.callbacks["progress"]
                 else:
                     progress = None
-                self.run(engine.tracker_state, video_idx, detections, image_pred, video_metadata, progress=progress)
+                self.run(
+                    engine.tracker_state,
+                    video_idx,
+                    detections,
+                    image_pred,
+                    video_metadata,
+                    progress=progress,
+                )
 
-    def run(self, tracker_state: TrackerState, video_id, detections, image_preds, video_metadata, progress=None):
+    def run(
+        self,
+        tracker_state: TrackerState,
+        video_id,
+        detections,
+        image_preds,
+        video_metadata,
+        progress=None,
+    ):
         image_metadatas = tracker_state.image_metadatas[
             tracker_state.image_metadatas.video_id == video_id
-            ]
+        ]
         image_gts = tracker_state.image_gt[tracker_state.image_gt.video_id == video_id]
         nframes = len(image_metadatas)
         video_name = tracker_state.video_metadatas.loc[video_id].name
@@ -143,16 +162,19 @@ class PitchVisualizationEngine(Callback):
             progress.init_progress_bar("vis", "Visualization", total)
         vis_frames = self.cfg.process_n_frames_by_video
         vis_frames = None if vis_frames == -1 else vis_frames
-        args = [create_draw_args(
-            image_id,
-            self,
-            image_metadatas,
-            detections,
-            tracker_state,
-            image_gts,
-            image_preds,
-            nframes,
-        ) for image_id in islice(image_metadatas.index, vis_frames)]
+        args = [
+            create_draw_args(
+                image_id,
+                self,
+                image_metadatas,
+                detections,
+                tracker_state,
+                image_gts,
+                image_preds,
+                nframes,
+            )
+            for image_id in islice(image_metadatas.index, vis_frames)
+        ]
         if self.cfg.save_videos:
             image = cv2_load_image(image_metadatas.iloc[0].file_path)
             filepath = self.save_dir / "videos" / f"{video_name}.mp4"
@@ -166,12 +188,7 @@ class PitchVisualizationEngine(Callback):
         with Pool(self.cfg.num_workers) as p:
             for patch, file_name in p.imap(process_frame, args):
                 if self.cfg.save_images:
-                    filepath = (
-                            self.save_dir
-                            / "images"
-                            / str(video_name)
-                            / file_name
-                    )
+                    filepath = self.save_dir / "images" / str(video_name) / file_name
                     filepath.parent.mkdir(parents=True, exist_ok=True)
                     assert cv2.imwrite(str(filepath), patch)
                 if self.cfg.save_videos:
@@ -187,7 +204,16 @@ class PitchVisualizationEngine(Callback):
         if progress:
             progress.on_module_end(None, "vis", None)
 
-    def draw_frame(self, image_metadata, detections_pred, ground_truths, image_pred, image_gt, nframes, image=None):
+    def draw_frame(
+        self,
+        image_metadata,
+        detections_pred,
+        ground_truths,
+        image_pred,
+        image_gt,
+        nframes,
+        image=None,
+    ):
         if image is not None:
             patch = image
         else:
@@ -201,7 +227,15 @@ class PitchVisualizationEngine(Callback):
             draw_ignore_region(patch, image_metadata)
 
         if "pitch" in self.cfg and self.cfg.pitch is not None:
-            self.draw_pitch(patch, image_metadata, image_pred, image_gt, detections_pred, ground_truths, self.cfg.pitch)
+            self.draw_pitch(
+                patch,
+                image_metadata,
+                image_pred,
+                image_gt,
+                detections_pred,
+                ground_truths,
+                self.cfg.pitch,
+            )
 
         # draw detections_pred
         for _, detection_pred in detections_pred.iterrows():
@@ -257,8 +291,10 @@ class PitchVisualizationEngine(Callback):
             )
 
         # keypoints, confidences, skeleton
-        if "keypoints_xyc" in detection and (is_prediction and self.cfg.prediction.draw_keypoints) or (
-            not is_prediction and self.cfg.ground_truth.draw_keypoints
+        if (
+            "keypoints_xyc" in detection
+            and (is_prediction and self.cfg.prediction.draw_keypoints)
+            or (not is_prediction and self.cfg.ground_truth.draw_keypoints)
         ):
             print_confidence = (
                 is_prediction and self.cfg.prediction.print_keypoints_confidence
@@ -268,7 +304,9 @@ class PitchVisualizationEngine(Callback):
             draw_skeleton = (is_prediction and self.cfg.prediction.draw_skeleton) or (
                 not is_prediction and self.cfg.ground_truth.draw_skeleton
             )
-            detection.keypoints_xyc[detection.keypoints_xyc[:, 2] < self.cfg.vis_kp_threshold] = 0.
+            detection.keypoints_xyc[
+                detection.keypoints_xyc[:, 2] < self.cfg.vis_kp_threshold
+            ] = 0.0
 
             draw_keypoints(
                 detection,
@@ -360,7 +398,7 @@ class PitchVisualizationEngine(Callback):
                 draw_text(
                     patch,
                     f"{detection.matched_with[0]}|{detection.matched_with[1]:.2f}",
-                    (r-3, t + 20),
+                    (r - 3, t + 20),
                     fontFace=self.cfg.text.font,
                     fontScale=self.cfg.text.scale,
                     thickness=self.cfg.text.thickness,
@@ -378,7 +416,9 @@ class PitchVisualizationEngine(Callback):
                 nt = self.cfg.prediction.display_n_closer_tracklets_costs
                 if "R" in detection.costs:
                     sorted_reid_costs = sorted(
-                        list(detection.costs["R"].items()), key=lambda x: x[1], reverse=True
+                        list(detection.costs["R"].items()),
+                        key=lambda x: x[1],
+                        reverse=True,
                     )
                     processed_reid_costs = {
                         t[0]: np.around(t[1], 2) for t in sorted_reid_costs[:nt]
@@ -395,7 +435,9 @@ class PitchVisualizationEngine(Callback):
                     )
                 if "S" in detection.costs:
                     sorted_st_costs = sorted(
-                        list(detection.costs["S"].items()), key=lambda x: x[1], reverse=True
+                        list(detection.costs["S"].items()),
+                        key=lambda x: x[1],
+                        reverse=True,
                     )
                     processed_st_costs = {
                         t[0]: np.around(t[1], 2) for t in sorted_st_costs[:nt]
@@ -412,7 +454,9 @@ class PitchVisualizationEngine(Callback):
                     )
                 if "K" in detection.costs:
                     sorted_gated_kf_costs = sorted(
-                        list(detection.costs["K"].items()), key=lambda x: x[1], reverse=True
+                        list(detection.costs["K"].items()),
+                        key=lambda x: x[1],
+                        reverse=True,
                     )
                     processed_gated_kf_costs = {
                         t[0]: np.around(t[1], 2) for t in sorted_gated_kf_costs[:nt]
@@ -451,9 +495,9 @@ class PitchVisualizationEngine(Callback):
         text_size = np.array([0, 0])
         # display role
         if (
-                is_prediction
-                and self.cfg.prediction.display_role
-                and hasattr(detection, "role")
+            is_prediction
+            and self.cfg.prediction.display_role
+            and hasattr(detection, "role")
         ):
             if not pd.isna(detection.role) and detection.role != "player":
                 l, t, r, b = detection.bbox.ltrb(
@@ -496,12 +540,16 @@ class PitchVisualizationEngine(Callback):
 
         # display jersey number
         if (
-                is_prediction
-                and self.cfg.prediction.display_jersey_number
-                and hasattr(detection, "jersey_number")
-                and detection.role == "player"
+            is_prediction
+            and self.cfg.prediction.display_jersey_number
+            and hasattr(detection, "jersey_number")
+            and detection.role == "player"
         ):
-            jn = str(int(detection.jersey_number)) if not pd.isna(detection.jersey_number) else "?"
+            jn = (
+                str(int(detection.jersey_number))
+                if not pd.isna(detection.jersey_number)
+                else "?"
+            )
             l, t, r, b = detection.bbox.ltrb(
                 image_shape=(patch.shape[1], patch.shape[0]), rounded=True
             )
@@ -517,13 +565,19 @@ class PitchVisualizationEngine(Callback):
                 alpha_bg=0.5,
                 alignV="b",
             )
-            
-    def draw_pitch(self, patch, image_metadata, image_pred, image_gt, detections_pred, ground_truths, pitch_cfg):
+
+    def draw_pitch(
+        self,
+        patch,
+        image_metadata,
+        image_pred,
+        image_gt,
+        detections_pred,
+        ground_truths,
+        pitch_cfg,
+    ):
         draw_pitch(
-            patch,
-            detections_pred, ground_truths,
-            image_pred, image_gt,
-            **pitch_cfg
+            patch, detections_pred, ground_truths, image_pred, image_gt, **pitch_cfg
         )
 
     def _colors(self, detection, is_prediction):
@@ -539,18 +593,28 @@ class PitchVisualizationEngine(Callback):
                 if "jersey_number" in detection and pd.notnull(detection.jersey_number):
                     index = int(detection.jersey_number)
                     if detection.team == "right":
-                        color_id = [int(c) for c in (np.array(right_cmap(index)) * 255)[:-1]]
+                        color_id = [
+                            int(c) for c in (np.array(right_cmap(index)) * 255)[:-1]
+                        ]
                     else:
-                        color_id = [int(c) for c in (np.array(left_cmap(index)) * 255)[:-1]]
+                        color_id = [
+                            int(c) for c in (np.array(left_cmap(index)) * 255)[:-1]
+                        ]
                 else:
-                    color_id = [255, 0, 0] if detection["team"] == "right" else [0, 0, 255]
+                    color_id = (
+                        [255, 0, 0] if detection["team"] == "right" else [0, 0, 255]
+                    )
             else:
                 color_id = cmap[int(detection.track_id) % len(cmap)]
             color_bbox = (
-                self.cfg.bbox[color_key] if self.cfg.bbox[color_key] is not None else cmap[int(detection.track_id) % len(cmap)]
+                self.cfg.bbox[color_key]
+                if self.cfg.bbox[color_key] is not None
+                else cmap[int(detection.track_id) % len(cmap)]
             )
             color_text = (
-                self.cfg.text[color_key] if self.cfg.text[color_key] is not None else color_id
+                self.cfg.text[color_key]
+                if self.cfg.text[color_key] is not None
+                else color_id
             )
             color_keypoint = (
                 self.cfg.keypoint[color_key]
@@ -565,25 +629,53 @@ class PitchVisualizationEngine(Callback):
         return color_bbox, color_text, color_keypoint, color_skeleton
 
 
-def create_draw_args(image_id, instance, image_metadatas, detections, tracker_state,
-                     image_gts, image_preds, nframes):
+def create_draw_args(
+    image_id,
+    instance,
+    image_metadatas,
+    detections,
+    tracker_state,
+    image_gts,
+    image_preds,
+    nframes,
+):
     image_metadata = image_metadatas.loc[image_id]
-    image_gt = image_gts.loc[image_id]
+    try:
+        image_gt = image_gts.loc[image_id]
+    except KeyError:
+
+        image_gt = image_metadata
     image_pred = image_preds.loc[image_id]
-    detections_pred = detections[
-        detections.image_id == image_metadata.name
-        ]
+    detections_pred = detections[detections.image_id == image_metadata.name]
     if tracker_state.detections_gt is not None:
         ground_truths = tracker_state.detections_gt[
             tracker_state.detections_gt.image_id == image_metadata.name
-            ]
+        ]
     else:
         ground_truths = None
 
-    return instance, image_metadata, detections_pred, ground_truths, image_pred, image_gt, nframes
+    return (
+        instance,
+        image_metadata,
+        detections_pred,
+        ground_truths,
+        image_pred,
+        image_gt,
+        nframes,
+    )
 
 
 def process_frame(args):
-    instance, image_metadata, detections_pred, ground_truths, image_pred, image_gt, nframes = args
-    frame = instance.draw_frame(image_metadata, detections_pred, ground_truths, image_pred, image_gt, nframes)
+    (
+        instance,
+        image_metadata,
+        detections_pred,
+        ground_truths,
+        image_pred,
+        image_gt,
+        nframes,
+    ) = args
+    frame = instance.draw_frame(
+        image_metadata, detections_pred, ground_truths, image_pred, image_gt, nframes
+    )
     return frame, Path(image_metadata.file_path).name

@@ -57,6 +57,10 @@ test_tracking: True
 eval_tracking: True
 print_config: False
 
+# wandb kwargs
+wandb:
+  name: exp002-eval-image-space
+
 # Dataset
 dataset:
   nvid: -1  # For a quick first inference, only the first video is processed. Use "-1" to process all the videos.

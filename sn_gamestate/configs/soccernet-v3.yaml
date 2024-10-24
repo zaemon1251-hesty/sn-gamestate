@@ -16,10 +16,10 @@ defaults:
   - modules/track: bpbreid_strong_sort
   - modules/jersey_number_detect: mmocr
   - modules/team: kmeans_embeddings
-  - modules/team_side: mean_position_naive_bbox
+  - modules/team_side: mean_position
   - modules/tracklet_agg: voting_role_jn
-  - modules/pitch : skip
-  - modules/calibration: skip
+  - modules/pitch : tvcalib
+  - modules/calibration: tvcalib
   - _self_
 
 # Pipeline definition :
@@ -33,17 +33,17 @@ pipeline:
   - pitch
   - calibration
   - jersey_number_detect
-  - tracklet_agg # 各 track_id に 一番もっともらしい jersey number を、一連のビデオシーケンス共通で割り当てる
-  - team # チームを reidで得られた embedding に基づいて clustering. 各 track_id について クラスターid 0, 1 が付与される
-  - team_side # クラスターid に　右か左かの情報を付与する
+  - tracklet_agg
+  - team
+  - team_side
 
 
 # Experiment name
-experiment_name: "sn-gamestate-v2"
+experiment_name: "sn-gamestate-v3"
 
 # Path definitions
 home_dir: "${oc.env:HOME}"
-data_dir: "/local//moriy/SoccerNetGS"
+data_dir: "/local/moriy/SoccerNetGS"
 model_dir: "/raid/moriy/model/sn-gamestate"
 
 # Machine configuration
@@ -54,25 +54,40 @@ use_rich: True
 modules: # Allows module-specific batch_size and other configuration
   bbox_detector: {batch_size: 64}
   pose_bottomup: {batch_size: 64}
-  reid: {batch_size: 256}
+  reid: {
+    batch_size: 256,
+    training_enabled: True,
+    dataset: {
+      train: {
+        min_samples_per_id: 2,
+        max_samples_per_id: 10000},
+      test: {
+        min_samples_per_id: 2,
+        max_samples_per_id: 10000
+      }
+    }
+  }
   track: {batch_size: 256}
+  pitch: {batch_size: 4}
+  calibration: {batch_size: 256, optim_steps: 100}
   jersey_number_detect: {batch_size: 16}
+
+# Flags
+# test_tracking = パイプラインが実行されるか
+# eval_tracking = 評価が実行されるか
+test_tracking: True
+eval_tracking: True
+print_config: False
 
 # wandb kwargs
 wandb:
-  name: exp003
-
-
-# Flags
-test_tracking: False
-eval_tracking: False
-print_config: True
+  name: exp001
 
 # Dataset
 dataset:
-  nvid: -1  # For a quick first inference, only the first video is processed. Use "-1" to process all the videos.
+  nvid: 3  # For a quick first inference, only the first video is processed. Use "-1" to process all the videos.
   eval_set: "train"  # Tracking is performed on the SoccerNet validation set. Choose from {"train", "valid", "test", "challenge"}.
-  dataset_path: ${data_dir}/additional-information-exp002  # The SoccerNet game state dataset is located under the data path (defined above) in the 'SoccerNetGS' folder
+  dataset_path: ${data_dir}/v3  # The SoccerNet game state dataset is located under the data path (defined above) in the 'SoccerNetGS' folder
   vids_dict: # Use one key per split (valid, test, etc)
     valid: []  # Specify explicitly which video to apply tracking on, e.g. ['SNGS-04', 'SNGS-51'] . Ignored when left empty.
 
@@ -84,7 +99,10 @@ state:
 # Visualization
 visualization:
   cfg:
-    save_videos: True  # Save a .mp4 video on disk with the game state reconstruction output (see 'tracklab/tracklab/configs/visualization' for more options)
+    save_videos: False  # Save a .mp4 video on disk with the game state reconstruction output (see 'tracklab/tracklab/configs/visualization' for more options)
+    save_images: True
+    video_fps: 5
+    pitch: null # pitch visualization を無効化
 
 # configure Hydra to use the current working directory
 # and set up the output directory according to experiment_name

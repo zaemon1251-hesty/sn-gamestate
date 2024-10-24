@@ -39,7 +39,12 @@ pipeline:
 
 
 # Experiment name
-experiment_name: "sn-gamestate-exp004"
+experiment_name: "sn-gamestate-v2"
+
+# wandb kwargs
+wandb:
+  name: exp004
+
 
 # Path definitions
 home_dir: "${oc.env:HOME}"

@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 from tracklab.datastruct import EngineDatapipe
 from tracklab.datastruct import TrackingDataset
+
 # FIXME this should be removed and use KeypointsSeriesAccessor and KeypointsFrameAccessor
 from tracklab.utils.coordinates import rescale_keypoints
 
@@ -82,12 +83,14 @@ class ReidDataset(ImageDataset):
         role_mapping,
         pose_model=None,
         masks_dir="",
-        **kwargs
+        **kwargs,
     ):
         # Init
         self.tracking_dataset = tracking_dataset
         self.reid_config = reid_config
-        self.pose_model = pose_model  #  can be used to generate pseudo labels for the reid dataset
+        self.pose_model = (
+            pose_model  #  can be used to generate pseudo labels for the reid dataset
+        )
         self.dataset_path = Path(self.tracking_dataset.dataset_path)
         self.role_mapping = role_mapping
         self.masks_dir = masks_dir
@@ -178,7 +181,11 @@ class ReidDataset(ImageDataset):
         log.info("Loading {} set...".format(split))
 
         # Precompute all paths
-        reid_path = Path(self.dataset_path, self.reid_dir, masks_mode) if self.reid_config.enable_human_parsing_labels else Path(self.dataset_path, self.reid_dir)
+        reid_path = (
+            Path(self.dataset_path, self.reid_dir, masks_mode)
+            if self.reid_config.enable_human_parsing_labels
+            else Path(self.dataset_path, self.reid_dir)
+        )
         reid_img_path = reid_path / self.reid_images_dir / split
         reid_mask_path = reid_path / self.reid_masks_dir / split
         reid_fig_path = reid_path / self.reid_fig_dir / split
@@ -231,7 +238,7 @@ class ReidDataset(ImageDataset):
                 mode=masks_mode,
             )
         else:
-            detections["masks_path"] = ''
+            detections["masks_path"] = ""
 
         # Add 0-based pid column (for Torchreid compatibility) to sampled detections
         self.ad_pid_column(detections)
@@ -241,6 +248,9 @@ class ReidDataset(ImageDataset):
             self.query_gallery_split(detections, reid_set_cfg.ratio_query_per_id)
 
     def load_reid_annotations(self, gt_dets, reid_anns_filepath, columns):
+        """
+        gt_dets(Dataframe)reid_anns_filepathの情報を追加する
+        """
         if reid_anns_filepath.exists():
             reid_anns = pd.read_json(
                 reid_anns_filepath, convert_dates=False, convert_axes=False
@@ -314,10 +324,31 @@ class ReidDataset(ImageDataset):
         )
         dets_df_f5 = dets_df_f4[dets_df_f4.person_id.isin(ids_to_keep)]
 
-        dets_df.loc[dets_df.id.isin(dets_df_f5.id), "split"] = "train"
-        log.info(
-            "{} filtered size = {}".format(self.__class__.__name__, len(dets_df_f5))
+        # roleが player,goalkeeper にも関わらず　teamがないものを削除
+        print(
+            "role sum player,goalkeeper",
+            dets_df_f5.role.isin(["player", "goalkeeper"]).sum(),
         )
+        print(
+            "team notnull",
+            dets_df_f5.team.notnull().sum(),
+        )
+        dets_df_f6 = dets_df_f5[
+            (dets_df_f5.role.isin(["player", "goalkeeper"]))
+            & (dets_df_f5.team.notnull() & dets_df_f5.team != -1)
+        ]
+        log.warning(
+            "{} removed for not having team label = {}".format(
+                self.__class__.__name__,
+                len(dets_df_f5) - len(dets_df_f6),
+            )
+        )
+
+        # Filter detections by visibility
+        log.info(
+            "{} filtered size = {}".format(self.__class__.__name__, len(dets_df_f6))
+        )
+        dets_df.loc[dets_df.id.isin(dets_df_f6.id), "split"] = "train"
 
     def save_reid_img_crops(
         self,
@@ -349,6 +380,9 @@ class ReidDataset(ImageDataset):
             for (video_id, image_id), dets_from_img in grp_gt_dets:
                 img_metadata = metadatas_df[metadatas_df.id == image_id].iloc[0]
                 img = cv2.imread(img_metadata.file_path)
+                if img is None:
+                    log.error("Image not found: {}".format(img_metadata.file_path))
+                    continue
                 for index, det_metadata in dets_from_img.iterrows():
                     # crop and resize bbox from image
                     l, t, w, h = det_metadata.bbox.ltwh(
@@ -370,21 +404,26 @@ class ReidDataset(ImageDataset):
 
                     # save image crop metadata
                     gt_dets.at[det_metadata.id, "reid_crop_path"] = str(abs_filepath)
-                    gt_dets.at[det_metadata.id, "reid_crop_width"] = img_crop.shape[
-                        0
-                    ]
-                    gt_dets.at[det_metadata.id, "reid_crop_height"] = img_crop.shape[
-                        1
-                    ]
+                    gt_dets.at[det_metadata.id, "reid_crop_width"] = img_crop.shape[0]
+                    gt_dets.at[det_metadata.id, "reid_crop_height"] = img_crop.shape[1]
                     pbar.update(1)
 
         log.info(
             'Saving reid crops annotations as json to "{}"'.format(reid_anns_filepath)
         )
         reid_anns_filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        # id重複チェック
+        if len(gt_dets["id"]) != len(gt_dets["id"].unique()):
+            log.error(
+                f"ID column contains duplicates in {set_name} set."
+                f"{len(gt_dets['id'])=}"
+                f"{len(gt_dets['id'].unique())=}"
+            )
+
         gt_dets[
             ["id", "reid_crop_path", "reid_crop_width", "reid_crop_height"]
-        ].to_json(reid_anns_filepath)
+        ].drop_duplicates(subset="id").to_json(reid_anns_filepath)
 
     def save_reid_masks_crops(
         self,
@@ -470,9 +509,9 @@ class ReidDataset(ImageDataset):
                             (w, h),
                             (mask_w, mask_h),
                         )
-                        masks_gt_crop = build_gaussian_body_part_heatmaps(  # FIXME
-                            keypoints_xyc, mask_w, mask_h
-                        )
+                        # masks_gt_crop = build_gaussian_body_part_heatmaps(  # FIXME
+                        #     keypoints_xyc, mask_w, mask_h
+                        # )
                     elif mode == "pose_on_img_crops":
                         # compute human parsing heatmaps using output of pose model on cropped person image
                         img_crop = cv2.imread(det_metadata.reid_crop_path)
@@ -588,7 +627,9 @@ class ReidDataset(ImageDataset):
         column_mapping["role"] = self.role_mapping
         for col in self.reid_config.columns:
             if col not in column_mapping:
-                unique_values = {element for df in dataframes for element in df[col].unique()}
+                unique_values = {
+                    element for df in dataframes for element in df[col].unique()
+                }
                 unique_values.discard(None)
                 ordered_unique_values = list(unique_values)
                 ordered_unique_values.sort()
@@ -609,12 +650,23 @@ class ReidDataset(ImageDataset):
             # 'RuntimeError: torch.cat(): input types can't be cast to the desired output type Long' in collate.py
             # -> still has to be fixed
             data_list = sorted_df[
-                ["pid", "camid", "img_path", "masks_path", "visibility", "image_id", "video_id"] + self.reid_config.columns
+                [
+                    "pid",
+                    "camid",
+                    "img_path",
+                    "masks_path",
+                    "visibility",
+                    "image_id",
+                    "video_id",
+                ]
+                + self.reid_config.columns
             ]
             # factorize all columns, i.e. replace string values with 0-based increasing ids
             for col in self.reid_config.columns:
                 data_list[col] = data_list[col].map(column_mapping[col])
-                self.column_mapping[col] = {value: key for key, value in column_mapping[col].items()}
+                self.column_mapping[col] = {
+                    value: key for key, value in column_mapping[col].items()
+                }
 
             data_list = data_list.to_dict("records")
             results.append(data_list)

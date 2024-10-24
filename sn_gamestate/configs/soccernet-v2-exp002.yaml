@@ -39,7 +39,7 @@ pipeline:
 
 
 # Experiment name
-experiment_name: "sn-gamestate-exp002"
+experiment_name: "sn-gamestate-v2"
 
 # Path definitions
 home_dir: "${oc.env:HOME}"
@@ -50,6 +50,10 @@ model_dir: "/raid/moriy/model/sn-gamestate"
 num_cores: 4
 use_wandb: True
 use_rich: True
+
+# wandb kwargs
+wandb:
+  name: exp002
 
 modules: # Allows module-specific batch_size and other configuration
   bbox_detector: {batch_size: 8}

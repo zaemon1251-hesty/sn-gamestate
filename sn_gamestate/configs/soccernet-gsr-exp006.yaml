@@ -16,10 +16,10 @@ defaults:
   - modules/track: bpbreid_strong_sort
   - modules/jersey_number_detect: mmocr
   - modules/team: kmeans_embeddings
-  - modules/team_side: mean_position_naive_bbox
+  - modules/team_side: mean_position
   - modules/tracklet_agg: voting_role_jn
-  - modules/pitch : skip
-  - modules/calibration: skip
+  - modules/pitch : tvcalib
+  - modules/calibration: tvcalib
   - _self_
 
 # Pipeline definition :
@@ -33,17 +33,16 @@ pipeline:
   - pitch
   - calibration
   - jersey_number_detect
-  - tracklet_agg # 各 track_id に 一番もっともらしい jersey number を、一連のビデオシーケンス共通で割り当てる
-  - team # チームを reidで得られた embedding に基づいて clustering. 各 track_id について クラスターid 0, 1 が付与される
-  - team_side # クラスターid に　右か左かの情報を付与する
-
+  - tracklet_agg
+  - team
+  - team_side
 
 # Experiment name
-experiment_name: "sn-gamestate-v2"
+experiment_name: "sn-gamestate-gsr"
 
 # Path definitions
 home_dir: "${oc.env:HOME}"
-data_dir: "/local//moriy/SoccerNetGS"
+data_dir: "/local/moriy/SoccerNetGS"
 model_dir: "/raid/moriy/model/sn-gamestate"
 
 # Machine configuration
@@ -51,35 +50,38 @@ num_cores: 4
 use_wandb: True
 use_rich: True
 
+# wandb kwargs
+wandb:
+  name: soccernet-gsr-exp006
+
 modules: # Allows module-specific batch_size and other configuration
   bbox_detector: {batch_size: 64}
   pose_bottomup: {batch_size: 64}
-  reid: {batch_size: 256}
+  reid: {batch_size: 256, training_enabled: True}
   track: {batch_size: 256}
+  pitch: {batch_size: 4}
+  calibration: {batch_size: 256, optim_steps: 100}
   jersey_number_detect: {batch_size: 16}
 
-# wandb kwargs
-wandb:
-  name: exp003
-
-
 # Flags
-test_tracking: False
-eval_tracking: False
-print_config: True
+test_tracking: True # If True, pipeline  が実行される
+eval_tracking: True #test_tracking と  eval_tracking がどちらもTrueの場合、評価が実行される
+print_config: False
 
 # Dataset
 dataset:
   nvid: -1  # For a quick first inference, only the first video is processed. Use "-1" to process all the videos.
-  eval_set: "train"  # Tracking is performed on the SoccerNet validation set. Choose from {"train", "valid", "test", "challenge"}.
-  dataset_path: ${data_dir}/additional-information-exp002  # The SoccerNet game state dataset is located under the data path (defined above) in the 'SoccerNetGS' folder
+  eval_set: "test"  # Tracking is performed on the SoccerNet validation set. Choose from {"train", "valid", "test", "challenge"}.
+  dataset_path: ${data_dir}/gamestate-2024  # The SoccerNet game state dataset is located under the data path (defined above) in the 'SoccerNetGS' folder
   vids_dict: # Use one key per split (valid, test, etc)
-    valid: []  # Specify explicitly which video to apply tracking on, e.g. ['SNGS-04', 'SNGS-51'] . Ignored when left empty.
+    valid: [
+      "SNGS-137"
+    ]  # Specify explicitly which video to apply tracking on, e.g. ['SNGS-04', 'SNGS-51'] . Ignored when left empty.
 
 # Tracker state (save computation time by dumping tracking results on disk for later re-use)
 state:
   save_file: "states/${experiment_name}.pklz"  # 'null' to disable saving. This is the save path for the tracker_state object that contains all modules outputs (bboxes, reid embeddings, jersey numbers, roles, teams, etc)
-  load_file: null  # 'null' to disable loading. Load a file that was saved with the 'state.save_file' option above. Don't forget to remove from the pipeline all modules that should not be run again, but loaded from the saved tracker state.
+  load_file: null # "/home/lr/moriy/workspace/soccernet/tracklab/outputs/sn-gamestate-gsr/2024-10-23/14-01-42/states/${experiment_name}.pklz" # null
 
 # Visualization
 visualization:
