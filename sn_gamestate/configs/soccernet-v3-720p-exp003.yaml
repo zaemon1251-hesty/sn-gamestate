@@ -84,6 +84,10 @@ modules: # Allows module-specific batch_size and other configuration
         evaluate: False,
         start_eval: 3,
       },
+      model: {
+        pretrained: True, # hrnet32 の学習済み重みは使用する
+        load_weights: "",
+      },
       sampler: {
         num_instances: 4
       },
@@ -112,7 +116,7 @@ print_config: False
 
 # wandb kwargs
 wandb:
-  name: exp002
+  name: exp003
 
 # Dataset
 dataset:

@@ -66,6 +66,9 @@ cfg:
     part_based:
       name: 'part_averaged_triplet_loss'
       ppl: 'cl'
+      reid_weight: 1.0
+      team_weight: 0.1
+      role_weight: 1.5
       weights:
         globl:
           id: 1.

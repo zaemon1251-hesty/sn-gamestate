@@ -4,6 +4,7 @@ import numpy as np
 from mmocr.apis import MMOCRInferencer
 
 # from mmengine.infer.infer import BaseInferencer
+from mmengine.runner import Runner
 from mmocr.apis import TextDetInferencer, TextRecInferencer
 from mmocr.utils import ConfigType, bbox2poly, crop_img, poly2bbox
 import logging
@@ -153,3 +154,8 @@ class MMOCR(DetectionLevelModule):
             pred_results[i].update(result_out)
 
         return pred_results
+
+    def train(self, cfg):
+        """TODO mmocrの仕様を確認して実装する"""
+        runner = Runner.from_cfg(cfg)
+        runner.train()

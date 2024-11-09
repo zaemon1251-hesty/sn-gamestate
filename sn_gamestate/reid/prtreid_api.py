@@ -110,7 +110,10 @@ class PRTReId(DetectionLevelModule):
         self.model = None
 
     def download_models(self, load_weights, pretrained_path, backbone):
-        if Path(load_weights).name == "prtreid-soccernet-baseline.pth.tar":
+        if (
+            load_weights  # Path or ""
+            and Path(load_weights).name == "prtreid-soccernet-baseline.pth.tar"
+        ):
             md5 = "9633825232bc89f23a94522c5561650e"
             download_file(
                 "https://zenodo.org/records/10653453/files/prtreid-soccernet-baseline.pth.tar?download=1",
@@ -205,4 +208,7 @@ class PRTReId(DetectionLevelModule):
 
     def train(self):
         self.engine, self.model = build_torchreid_model_engine(self.cfg)
+
+        print(f"{len(self.engine.train_loader)=}")
+
         self.engine.run(**engine_run_kwargs(self.cfg))
