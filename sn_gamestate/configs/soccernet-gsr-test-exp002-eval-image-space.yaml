@@ -72,7 +72,7 @@ dataset:
 # Tracker state (save computation time by dumping tracking results on disk for later re-use)
 state:
   save_file: null  # 'null' to disable saving. This is the save path for the tracker_state object that contains all modules outputs (bboxes, reid embeddings, jersey numbers, roles, teams, etc)
-  load_file: "/home/lr/moriy/workspace/soccernet/tracklab/outputs/sn-gamestate-1/2024-09-13/17-11-26/states/${experiment_name}.pklz"  # 'null' to disable loading. Load a file that was saved with the 'state.save_file' option above. Don't forget to remove from the pipeline all modules that should not be run again, but loaded from the saved tracker state.
+  load_file: "/raid_elmo/home/lr/moriy/SoccerNetGS/outputs/sn-gamestate-1/2024-09-13/17-11-26/states/sn-gamestate-1.pklz"  # 'null' to disable loading. Load a file that was saved with the 'state.save_file' option above. Don't forget to remove from the pipeline all modules that should not be run again, but loaded from the saved tracker state.
 
 # Visualization
 visualization:

@@ -160,8 +160,10 @@ git clone https://github.com/TrackingLaboratory/tracklab.git
 > Instructions : [PyCharm](https://www.jetbrains.com/help/pycharm/configuring-project-structure.html) and [VS Code](https://code.visualstudio.com/docs/editor/multi-root-workspaces)
 
 #### Option 1: Install using Poetry
+
 1. Install poetry : https://python-poetry.org/docs/#installing-with-the-official-installer
 2. Install the dependencies :
+
 ```bash
 cd sn-gamestate
 poetry install
@@ -173,13 +175,17 @@ To enter the virtual environment created by Poetry, you can either use `poetry s
 or prefix all commands by `poetry run`.
 
 #### Option 2: Install using conda
+
 1. Install conda : https://docs.conda.io/projects/miniconda/en/latest/
 2. Create a new conda environment :
+
 ```bash
 conda create -n tracklab pip python=3.10 pytorch==1.13.1 torchvision==0.14.1 pytorch-cuda=11.7 -c pytorch -c nvidia -y
 conda activate tracklab
 ```
+
 3. Install all the dependencies with :
+
 ```bash
 cd sn-gamestate
 pip install -e .
@@ -188,8 +194,10 @@ mim install mmcv==2.0.1
 ```
 
 #### Updating
+
 Please make sure to check the official GitHub regularly for updates.
 To update this repository to its latest version, run `git pull` on both repositories:
+
 ```bash
 git pull
 git -C ../tracklab pull
@@ -201,12 +209,15 @@ After updating, you should rerun the installation of the dependencies in case th
 We will advertise big updates on the [soccernet discord](https://discord.com/invite/cPbqf2mAwF).
 
 ### 2. Downloading the Dataset and the Baseline Models Weights
+
 #### Automatic download
+
 Tracklab will automatically download the SoccerNet-gamestate dataset and all models' weights when you run the baseline for the first time.
 If the script stopped before the download was completed, please delete the dataset folder and start from scratch to avoid any error.
 If you choose this option, you can go directly to the next step.
 
 #### Manual downloading of SoccerNet-gamestate
+
 If you want to download the dataset manually, you can run the following snippet
 after installing the soccernet package (`pip install SoccerNet`) :
 

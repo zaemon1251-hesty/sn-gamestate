@@ -21,6 +21,8 @@ from tracklab.utils.coordinates import rescale_keypoints
 from tracklab.utils.cv2 import overlay_heatmap
 import tracklab
 
+from copy import deepcopy
+
 from prtreid.data import ImageDataset
 from prtreid.utils.imagetools import (
     gkern,
@@ -255,12 +257,17 @@ class ReidDataset(ImageDataset):
             reid_anns = pd.read_json(
                 reid_anns_filepath, convert_dates=False, convert_axes=False
             )
+            log.info(f"{reid_anns.columns=}")
+            for col in columns:
+                if col in gt_dets.columns:
+                    gt_dets.drop(columns=col, inplace=True)
             tmp_df = gt_dets.merge(
                 reid_anns,
                 left_index=True,
                 right_index=True,
                 validate="one_to_one",
             )
+            log.info(f"{tmp_df.columns=}")
             gt_dets[columns] = tmp_df[columns]
         else:
             # no annotations yet, initialize empty columns

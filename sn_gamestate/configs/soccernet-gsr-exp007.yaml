@@ -22,39 +22,28 @@ defaults:
   - modules/calibration: tvcalib
   - _self_
 
-# Pipeline definition :
-# - Defines the order in which the modules will be called
-# - If loading a tracking state from disk, remove modules whose outputs are already provided in the loaded state
-# Use 'pipeline: []' for an empty pipeline (e.g. when loading all tracking results from a saved .pklz tracker state)
-pipeline:
-  - bbox_detector
-  - reid
-  - track
-  - pitch
-  - calibration
-  - jersey_number_detect
-  - tracklet_agg
-  - team
-  - team_side
-
+pipeline: []
 
 # Experiment name
-experiment_name: "sn-gamestate-v3-720p"
+experiment_name: "sn-gamestate-gsr"
 
 # Path definitions
 home_dir: "${oc.env:HOME}"
 data_dir: "/local/moriy/SoccerNetGS"
-model_dir: "/local/moriy/model/soccernet/sn-gamestate"
-# "/raid/moriy/model/sn-gamestate"
+model_dir: "/raid/moriy/model/soccernet/sn-gamestate"
 
 # Machine configuration
 num_cores: 4
 use_wandb: True
 use_rich: True
 
+# wandb kwargs
+wandb:
+  name: exp007
+
 modules: # Allows module-specific batch_size and other configuration
-  bbox_detector: {batch_size: 32}
-  pose_bottomup: {batch_size: 32}
+  bbox_detector: {batch_size: 64}
+  pose_bottomup: {batch_size: 64}
   reid: {
     batch_size: 256,
     training_enabled: True,
@@ -67,11 +56,17 @@ modules: # Allows module-specific batch_size and other configuration
         min_w: 10
         },
       test: {
+        set_name: "valid",
         min_samples_per_id: 4,
-        max_samples_per_id: 10
+        max_samples_per_id: 10,
+        ratio_query_per_id: 0.2
       }
     },
     cfg: {
+      project: {
+        logger: {use_wandb: True},
+        experiment_name: "${wandb.name}",
+      },
       train: {
         max_epoch: 120,
         # batch_size: 128,
@@ -83,6 +78,7 @@ modules: # Allows module-specific batch_size and other configuration
       test: {
         evaluate: False,
         start_eval: 3,
+        batch_size: 4
       },
       model: {
         pretrained: True, # hrnet32 の学習済み重みは使用する
@@ -92,12 +88,10 @@ modules: # Allows module-specific batch_size and other configuration
         num_instances: 4
       },
       data: {
-        save_dir: "${model_dir}/reid/${experiment_name}/"
+        save_dir: "${model_dir}/reid/${experiment_name}/",
+        workers: 1
       },
       loss: {
-        part_based: {
-          team_weight: 1.5, # team weightのみ変更 15倍！！
-        },
         triplet: {margin: .0},
       }
       # rmsprop: {alpha: 0.99},
@@ -110,39 +104,28 @@ modules: # Allows module-specific batch_size and other configuration
   jersey_number_detect: {batch_size: 16}
 
 # Flags
-# test_tracking = パイプラインが実行されるか
-# eval_tracking = 評価が実行されるか
-test_tracking: True
-eval_tracking: False
+test_tracking: True # If True, pipeline  が実行される
+eval_tracking: True #test_tracking と  eval_tracking がどちらもTrueの場合、評価が実行される
 print_config: False
-
-# wandb kwargs
-wandb:
-  name: exp004
 
 # Dataset
 dataset:
-  nvid: -1  # For a quick first inference, only the first video is processed. Use "-1" to process all the videos.
-  eval_set: "test"  # Tracking is performed on the SoccerNet validation set. Choose from {"train", "valid", "test", "challenge"}.
-  dataset_path: ${data_dir}/v3-720p  # The SoccerNet game state dataset is located under the data path (defined above) in the 'SoccerNetGS' folder
-  vids_dict: # Use one key per split (valid, test, etc)
-    valid: []  # Specify explicitly which video to apply tracking on, e.g. ['SNGS-04', 'SNGS-51'] . Ignored when left empty.
+  nvid: -1  #
+  eval_set: "test"
+  dataset_path: ${data_dir}/gamestate-2024
+  vids_dict:
+    valid: []
 
-# Tracker state (save computation time by dumping tracking results on disk for later re-use)
 state:
-  save_file: "states/${experiment_name}.pklz"  # 'null' to disable saving. This is the save path for the tracker_state object that contains all modules outputs (bboxes, reid embeddings, jersey numbers, roles, teams, etc)
-  load_file: null  # 'null' to disable loading. Load a file that was saved with the 'state.save_file' option above. Don't forget to remove from the pipeline all modules that should not be run again, but loaded from the saved tracker state.
+  save_file: null #"states/${experiment_name}.pklz"  # 'null' to disable saving. This is the save path for the tracker_state object that contains all modules outputs (bboxes, reid embeddings, jersey numbers, roles, teams, etc)
+  load_file: /home/lr/moriy/workspace/soccernet/tracklab/outputs/sn-gamestate-gsr/2024-11-20/18-25-22/states/sn-gamestate-gsr.pklz
 
 # Visualization
 visualization:
   cfg:
-    save_videos: False  # Save a .mp4 video on disk with the game state reconstruction output (see 'tracklab/tracklab/configs/visualization' for more options)
-    save_images: True
-    video_fps: 5
-    pitch: null # pitch visualization を無効化
+    save_videos: True
 
-# configure Hydra to use the current working directory
-# and set up the output directory according to experiment_name
+
 project_dir: "${hydra:runtime.cwd}"
 hydra:
   output_subdir: "configs"
