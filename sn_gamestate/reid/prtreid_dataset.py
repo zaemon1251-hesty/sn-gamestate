@@ -284,6 +284,10 @@ class ReidDataset(ImageDataset):
         keep = dets_df_f1.bbox_ltwh.apply(
             lambda x: x[2] > reid_cfg.min_w
         ) & dets_df_f1.bbox_ltwh.apply(lambda x: x[3] > reid_cfg.min_h)
+
+        # ballはのこす
+        keep = keep | (dets_df_f1.role == "ball")
+
         dets_df_f2 = dets_df_f1[keep]
         log.warning(
             "{} removed because too small samples (h<{} or w<{}) = {}".format(
@@ -341,7 +345,11 @@ class ReidDataset(ImageDataset):
             dets_df_f5.team.notnull().sum(),
         )
         dets_df_f6 = dets_df_f5[
-            (dets_df_f5.role.isin(["player", "goalkeeper"]))
+            (
+                dets_df_f5.role.isin(
+                    ["player", "goalkeeper", "ball", "referee", "other"]
+                )
+            )  # あ、やべ、refereeとかballとか必要だわ
             & (dets_df_f5.team.notnull() & dets_df_f5.team != -1)
         ]
         log.warning(
