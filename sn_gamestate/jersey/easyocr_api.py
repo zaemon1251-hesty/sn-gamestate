@@ -16,7 +16,7 @@ class EasyOCR(DetectionLevelModule):
 
     def __init__(self, cfg, device, batch_size, tracking_dataset=None):
         super().__init__(batch_size=batch_size)
-        self.reader = easyocr.Reader(['en'], gpu=True)
+        self.reader = easyocr.Reader(["en"], gpu=True)
         self.cfg = cfg
 
     def no_jersey_number(self):
@@ -39,17 +39,18 @@ class EasyOCR(DetectionLevelModule):
     def process(self, batch, detections: pd.DataFrame, metadatas: pd.DataFrame):
         jersey_number_detection = []
         jersey_number_confidence = []
-        images_np = [img.cpu().numpy() for img in batch['img']]
-        self.reader = easyocr.Reader(['en'], gpu=True)
+        images_np = [img.cpu().numpy() for img in batch["img"]]
+        self.reader = easyocr.Reader(["en"], gpu=True)
         if self.batch_size == 1:
-            for img in batch['img']:
+            for img in batch["img"]:
                 img_np = img.cpu().numpy()
                 result = self.reader.readtext(img_np, **self.cfg)
                 if result == []:
                     jn = self.no_jersey_number()
                 else:
                     result = result[
-                        0]  # only take the first result (highest confidence)
+                        0
+                    ]  # only take the first result (highest confidence)
                     try:
                         # see if the result is a number
                         int(result[1])
@@ -61,14 +62,16 @@ class EasyOCR(DetectionLevelModule):
                 jersey_number_detection.append(jn[1])
                 jersey_number_confidence.append(jn[2])
         else:
-            results = self.reader.readtext_batched(images_np, n_width=64, n_height=128,
-                                                   workers=8, **self.cfg)
+            results = self.reader.readtext_batched(
+                images_np, n_width=64, n_height=128, workers=8, **self.cfg
+            )
             for result in results:
                 if result == []:
                     jn = self.no_jersey_number()
                 else:
                     result = result[
-                        0]  # only take the first result (highest confidence)
+                        0
+                    ]  # only take the first result (highest confidence)
                     try:
                         # see if the result is a number
                         int(result[1])
@@ -80,7 +83,7 @@ class EasyOCR(DetectionLevelModule):
                 jersey_number_detection.append(jn[1])
                 jersey_number_confidence.append(jn[2])
 
-        detections['jersey_number_detection'] = jersey_number_detection
-        detections['jersey_number_confidence'] = jersey_number_confidence
+        detections["jersey_number_detection"] = jersey_number_detection
+        detections["jersey_number_confidence"] = jersey_number_confidence
 
         return detections

@@ -33,11 +33,10 @@ class TrackletTeamClusteringByColor(VideoLevelModule):
         :param bbox: Bounding box coordinates [x_min, y_min, width, height].
         :return: Average BGR color as a numpy array [B, G, R].
         """
-        # Load the image from the file path
         frame = cv2.imread(image_path)
         if frame is None:
             log.warning(f"Image at {image_path} could not be loaded.")
-            return np.array([0, 0, 0])  # Return black if image couldn't be loaded
+            return np.array([0, 0, 0])
 
         l, t, r, b = bbox.ltrb(
             image_shape=(frame.shape[1], frame.shape[0]), rounded=True
@@ -45,54 +44,54 @@ class TrackletTeamClusteringByColor(VideoLevelModule):
         cropped_img = frame[t:b, l:r]
 
         if cropped_img.size == 0:
-            return np.array([0, 0, 0])  # Return black if bbox is invalid
+            return np.array([0, 0, 0])
 
-        # Calculate the average color of the cropped image
-        avg_color = np.mean(cropped_img, axis=(0, 1))  # Average over width and height
+        avg_color = np.mean(cropped_img, axis=(0, 1))
         return avg_color
 
     @torch.no_grad()
     def process(self, detections: pd.DataFrame, metadatas: pd.DataFrame):
-        # Filter player detections
-        player_detections = detections[detections.role == "player"]
+        if detections.empty:
+            raise ValueError("No detections found in the DataFrame.")
 
-        # List to store the average color for each track_id
+        if metadatas.empty:
+            raise ValueError("No metadata found in the DataFrame.")
+
+        player_detections = detections  # [detections.role == "player"]
+        if player_detections.empty:
+            print(detections.role.count())
+            raise ValueError("No player detections found in the DataFrame.")
+
         color_list = []
-
         for idx, row in player_detections.iterrows():
             # Use frame (stringified) to match image_id in metadata DataFrame
-            metadata_row = metadatas[metadatas["id"] == row.image_id]
+            metadata_row = metadatas[metadatas.id == row.image_id]
             if metadata_row.empty:
-                log.warning(f"Metadata not found for frame: {row.image_id}")
+                print(f"Metadata not found for frame: {row.image_id}, {metadatas.id}")
                 continue
 
             image_path = metadata_row["file_path"].values[0]
-            bbox = row.bbox  # Bounding box for the player
-            avg_color = self.get_average_color(
-                image_path, bbox
-            )  # Compute average color
+            bbox = row.bbox
+            avg_color = self.get_average_color(image_path, bbox)
             color_list.append({"track_id": row.track_id, "avg_color": avg_color})
 
-        if not color_list:  # Check if color_list is empty
-            detections["team_cluster"] = (
-                np.nan
-            )  # Initialize 'team_cluster' with a default value
+        if not color_list:
+            detections["team_cluster"] = np.nan
+            print("Warnings: all of metadata_row are empty.!!!!!")
             return detections
 
-        # Create a DataFrame with the average colors for each track_id
         color_tracklet = (
             pd.DataFrame(color_list).groupby("track_id").mean().reset_index()
         )
 
-        if len(color_tracklet) == 1:  # Only one track_id and color
+        if len(color_tracklet) == 1:
             color_tracklet["team_cluster"] = 0
         else:
-            # Perform KMeans clustering on the average colors
             colors = np.vstack(color_tracklet.avg_color.values)
             kmeans = KMeans(n_clusters=2, random_state=0).fit(colors)
             color_tracklet["team_cluster"] = kmeans.labels_
 
-        # Map the team cluster back to the original detections DataFrame
+        detections.drop(columns=["team_cluster"], errors="ignore", inplace=True)
         detections = detections.merge(
             color_tracklet[["track_id", "team_cluster"]],
             on="track_id",

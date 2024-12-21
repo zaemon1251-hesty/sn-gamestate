@@ -12,32 +12,51 @@ log = logging.getLogger(__name__)
 pitch_file = Path(__file__).parent / "Radar.png"
 
 
-def draw_pitch(patch, detections_pred, detections_gt,
-               image_pred, image_gt,
-               line_thickness=3,
-               pitch_scale=3,
-               pitch_image=None,
-               ):
+def draw_pitch(
+    patch,
+    detections_pred,
+    detections_gt,
+    image_pred,
+    image_gt,
+    line_thickness=3,
+    pitch_scale=3,
+    pitch_image=None,
+):
 
     # Draw the lines on the image pitch
     if "lines" in image_pred:
         image_height, image_width, _ = patch.shape
         for name, line in image_pred["lines"].items():
             if name == "Circle central" and len(line) > 4:
-                points = np.array([(int(p["x"] * image_width), int(p["y"]*image_height)) for p in line])
+                points = np.array(
+                    [
+                        (int(p["x"] * image_width), int(p["y"] * image_height))
+                        for p in line
+                    ]
+                )
                 try:
                     ellipse = cv2.fitEllipse(points)
-                    cv2.ellipse(patch, ellipse, color=SoccerPitch.palette[name],
-                                thickness=line_thickness)
+                    cv2.ellipse(
+                        patch,
+                        ellipse,
+                        color=SoccerPitch.palette[name],
+                        thickness=line_thickness,
+                    )
                 except cv2.error:
                     log.warning("Could not draw ellipse")
 
             else:
-                for j in np.arange(len(line)-1):
+                for j in np.arange(len(line) - 1):
                     cv2.line(
                         patch,
-                        (int(line[j]["x"] * image_width), int(line[j]["y"] * image_height)),
-                        (int(line[j+1]["x"] * image_width), int(line[j+1]["y"] * image_height)),
+                        (
+                            int(line[j]["x"] * image_width),
+                            int(line[j]["y"] * image_height),
+                        ),
+                        (
+                            int(line[j + 1]["x"] * image_width),
+                            int(line[j + 1]["y"] * image_height),
+                        ),
                         color=SoccerPitch.palette[name],
                         thickness=line_thickness,  # TODO : make this a parameter
                     )
@@ -49,38 +68,72 @@ def draw_pitch(patch, detections_pred, detections_gt,
         draw_radar_view(patch, detections_pred, scale=pitch_scale, group="predictions")
 
 
-
 def draw_radar_view(patch, detections, scale, delta=32, group="ground truth"):
     pitch_width = 105 + 2 * 10  # pitch size + 2 * margin
     pitch_height = 68 + 2 * 5  # pitch size + 2 * margin
     sign = -1 if group == "ground truth" else +1
-    radar_center_x = int(1920/2 - pitch_width * scale / 2 * sign - delta * sign)
+    radar_center_x = int(1920 / 2 - pitch_width * scale / 2 * sign - delta * sign)
     radar_center_y = int(1080 - pitch_height * scale / 2)
     radar_top_x = int(radar_center_x - pitch_width * scale / 2)
     radar_top_y = int(1080 - pitch_height * scale)
     radar_width = int(pitch_width * scale)
     radar_height = int(pitch_height * scale)
     if pitch_file is not None:
-        radar_img = cv2.resize(cv2.imread(str(pitch_file)), (pitch_width * scale, pitch_height * scale))
+        radar_img = cv2.resize(
+            cv2.imread(str(pitch_file)), (pitch_width * scale, pitch_height * scale)
+        )
         radar_img = cv2.bitwise_not(radar_img)
-        cv2.line(radar_img, (0, 0), (0, radar_img.shape[0]), thickness=6, color=(0, 0, 255))
-        cv2.line(radar_img, (radar_img.shape[1], 0), (radar_img.shape[1], radar_img.shape[0]), thickness=6,
-                 color=(255, 0, 0))
+        cv2.line(
+            radar_img, (0, 0), (0, radar_img.shape[0]), thickness=6, color=(0, 0, 255)
+        )
+        cv2.line(
+            radar_img,
+            (radar_img.shape[1], 0),
+            (radar_img.shape[1], radar_img.shape[0]),
+            thickness=6,
+            color=(255, 0, 0),
+        )
     else:
         radar_img = np.ones((pitch_height * scale, pitch_width * scale, 3)) * 255
 
     alpha = 0.3
-    patch[radar_top_y:radar_top_y + radar_height, radar_top_x:radar_top_x + radar_width,
-    :] = cv2.addWeighted(patch[radar_top_y:radar_top_y + radar_height, radar_top_x:radar_top_x + radar_width,
-    :], 1-alpha, radar_img, alpha, 0.0)
-    patch[radar_top_y:radar_top_y + radar_height, radar_top_x:radar_top_x + radar_width,
-    :] = cv2.addWeighted(patch[radar_top_y:radar_top_y + radar_height, radar_top_x:radar_top_x + radar_width,
-    :], 1-alpha, radar_img, alpha, 0.0)
+    patch[
+        radar_top_y : radar_top_y + radar_height,
+        radar_top_x : radar_top_x + radar_width,
+        :,
+    ] = cv2.addWeighted(
+        patch[
+            radar_top_y : radar_top_y + radar_height,
+            radar_top_x : radar_top_x + radar_width,
+            :,
+        ],
+        1 - alpha,
+        radar_img,
+        alpha,
+        0.0,
+    )
+    patch[
+        radar_top_y : radar_top_y + radar_height,
+        radar_top_x : radar_top_x + radar_width,
+        :,
+    ] = cv2.addWeighted(
+        patch[
+            radar_top_y : radar_top_y + radar_height,
+            radar_top_x : radar_top_x + radar_width,
+            :,
+        ],
+        1 - alpha,
+        radar_img,
+        alpha,
+        0.0,
+    )
     draw_text(
         patch,
         group,
-        (radar_center_x, radar_top_y-10),
-        1, 3, 2,
+        (radar_center_x, radar_top_y - 10),
+        1,
+        3,
+        2,
         color_txt=(255, 255, 255),
         alignH="c",
         alignV="b",
@@ -100,7 +153,9 @@ def draw_radar_view(patch, detections, scale, delta=32, group="ground truth"):
         cat = None
         if "jersey_number" in detection and detection.jersey_number is not None:
             if "role" in detection and detection.role == "player":
-                if isinstance(detection.jersey_number, float) and np.isnan(detection.jersey_number):
+                if isinstance(detection.jersey_number, float) and np.isnan(
+                    detection.jersey_number
+                ):
                     cat = None
                 else:
                     cat = f"{int(detection.jersey_number)}"
@@ -118,10 +173,12 @@ def draw_radar_view(patch, detections, scale, delta=32, group="ground truth"):
             draw_text(
                 patch,
                 cat,
-                (radar_center_x + int(x_middle * scale),
-                 radar_center_y + int(y_middle * scale)),
+                (
+                    radar_center_x + int(x_middle * scale),
+                    radar_center_y + int(y_middle * scale),
+                ),
                 1,
-                0.2*scale,
+                0.2 * scale,
                 1,
                 color_txt=color,
                 alignH="c",
@@ -130,9 +187,11 @@ def draw_radar_view(patch, detections, scale, delta=32, group="ground truth"):
         else:
             cv2.circle(
                 patch,
-                (radar_center_x + int(x_middle * scale),
-                 radar_center_y + int(y_middle * scale)),
+                (
+                    radar_center_x + int(x_middle * scale),
+                    radar_center_y + int(y_middle * scale),
+                ),
                 scale,
                 color=color,
-                thickness=-1
+                thickness=-1,
             )
