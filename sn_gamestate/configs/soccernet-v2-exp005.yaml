@@ -1,16 +1,9 @@
-# TrackLab SoccerNet config
-
-# The defaults list contains the files that will be used
-# to create the final config file. This item *must* be
-# the first element in the file.
-# Detailed configs for each default component below are located in "sn-gamestate/sn-gamestate/configs" and "tracklab/tracklab/configs"
-# Define here which implementation (yolov8, oc_sort, ..) to use for each generic (detection, tracking, ...) component.
 defaults:
   - dataset: soccernet_gs
   - eval: trackeval
   - engine: offline
-  - state: save  # Dump tracking results to a .pcklz file to save computation time on the next run. Have a look at TrackLab tutorials for more details.
-  - visualization: gamestate  # Save tracking results as a .mp4 video in the run directory specified below (sn-gamestate/outputs/...)
+  - state: save
+  - visualization: gamestate
   - modules/bbox_detector: yolov8
   - modules/reid: prtreid
   - modules/track: bpbreid_strong_sort

@@ -91,15 +91,6 @@ class MMOCR(DetectionLevelModule):
         jersey_number_confidence = []
         images_np = [img.cpu().numpy() for img in batch["img"]]
         del batch["img"]
-        # for img in batch['img']:
-        #     img = img.cpu().numpy()
-        # images_np = batch['img']
-        # images_np = [img for img in batch['img']]
-        # import pickle
-        # with open('images_np.pkl', 'wb') as f:
-        #     pickle.dump(images_np, f)
-        # predictions = self.ocr(images_np, **self.cfg)['predictions']
-
         predictions = self.run_mmocr_inference(images_np)
         for prediction in predictions:
             jn, conf = self.extract_jersey_numbers_from_ocr(prediction)
@@ -112,46 +103,56 @@ class MMOCR(DetectionLevelModule):
         return detections
 
     def run_mmocr_inference(self, images_np):
-        # print('run detection inference')
-        result = {}
-        result["det"] = self.textdetinferencer(
+        # 1) 検出（Detection）バッチ単位でまとめて実行
+        det_outputs = self.textdetinferencer(
             images_np,
             return_datasamples=True,
             batch_size=self.batch_size,
             progress_bar=False,
         )["predictions"]
 
-        # print('run recognition inference')
-        result["rec"] = []
-        for img, det_data_sample in zip(images_np, result["det"]):
-            det_pred = det_data_sample.pred_instances
-            rec_inputs = []
-            for polygon in det_pred["polygons"]:
-                # Roughly convert the polygon to a quadangle with
-                # 4 points
+        # 2) 各画像の polygons をまとめて保持するためのリストを用意
+        rec_inputs_all = []
+        # 後で認識結果を元の画像単位で分割するため、何個のポリゴンを処理したか記録
+        polygon_counts = []
+
+        # 画像ごとにポリゴンを取得して、crop 画像をまとめる
+        for img, det_data_sample in zip(images_np, det_outputs):
+            polygons = det_data_sample.pred_instances["polygons"]
+            polygon_counts.append(len(polygons))
+            for polygon in polygons:
+                # ポリゴンをバウンディングボックスに変換 → 画像を切り出し
                 quad = bbox2poly(poly2bbox(polygon)).tolist()
                 rec_input = crop_img(img, quad)
                 if rec_input.shape[0] == 0 or rec_input.shape[1] == 0:
                     # rec_input = np.zeros((1, 1, 3), dtype=np.uint8)
                     continue
-                rec_inputs.append(rec_input)
-            result["rec"].append(
-                self.textrecinferencer(
-                    rec_inputs,
-                    return_datasamples=True,
-                    batch_size=self.batch_size,
-                    progress_bar=False,
-                )["predictions"]
-            )
+                rec_inputs_all.append(rec_input)
 
-        pred_results = [{} for _ in range(len(result["rec"]))]
-        for i, rec_pred in enumerate(result["rec"]):
+        # 3) ここでまとめて textrecinferencer() を呼ぶ
+        rec_outputs_all = self.textrecinferencer(
+            rec_inputs_all,
+            return_datasamples=True,
+            batch_size=self.batch_size,
+            progress_bar=False,
+        )["predictions"]
+
+        # 4) まとめた結果を、元の画像ごとに分割して格納する
+        pred_results = []
+        offset = 0
+        for count in polygon_counts:
+            # 今の画像用の認識結果を slice でまとめて取り出す
+            rec_results_for_this_image = rec_outputs_all[offset : offset + count]
+            offset += count
+
+            # 必要に応じてテキストとスコアだけ取り出して整形
             result_out = dict(rec_texts=[], rec_scores=[])
-            for rec_pred_instance in rec_pred:
+            for rec_pred_instance in rec_results_for_this_image:
                 rec_dict_res = self.textrecinferencer.pred2dict(rec_pred_instance)
                 result_out["rec_texts"].append(rec_dict_res["text"])
                 result_out["rec_scores"].append(rec_dict_res["scores"])
-            pred_results[i].update(result_out)
+
+            pred_results.append(result_out)
 
         return pred_results
 

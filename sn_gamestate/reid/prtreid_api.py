@@ -45,6 +45,7 @@ class PRTReId(DetectionLevelModule):
         "body_masks",
         "role_detection",
         "role_confidence",
+        "category_id",  # yolov8 recogzie ball
     ]
     forget_columns = ["embeddings", "body_masks"]
     role_mapping = {
@@ -181,6 +182,14 @@ class PRTReId(DetectionLevelModule):
         roles = [self.inverse_role_mapping[index] for index in roles]
         role_confidence = [torch.max(i).item() for i in role_scores_]
 
+        # if yolov8 recognize detections as ball, then set role as ball
+        ball_mask = (detections["category_id"] == 2).values
+        roles = np.array(roles)
+        role_confidence = np.array(role_confidence)
+
+        roles[ball_mask] = "ball"
+        role_confidence[ball_mask] = 1.0
+
         embeddings = embeddings.cpu().detach().numpy()
         visibility_scores = visibility_scores.cpu().detach().numpy()
         body_masks = body_masks.cpu().detach().numpy()
@@ -199,8 +208,8 @@ class PRTReId(DetectionLevelModule):
                 "embeddings": list(embeddings),
                 "visibility_scores": list(visibility_scores),
                 "body_masks": list(body_masks),
-                "role_detection": roles,
-                "role_confidence": role_confidence,
+                "role_detection": list(roles),
+                "role_confidence": list(role_confidence),
             },
             index=detections.index,
         )

@@ -1,17 +1,17 @@
 # Guidelines for the Game State Reconstruction Challenge
 
-The [Game State Reconstruction]() will be held at the official [CVSports Workshop](https://vap.aau.dk/cvsports/) at CVPR 2024! 
+The [Game State Reconstruction]() will be held at the official [CVSports Workshop](https://vap.aau.dk/cvsports/) at CVPR 2024!
 Subscribe (watch) the repo to receive the latest info regarding timeline and prizes!
 
 We propose the SoccerNet challenges to encourage the development of state-of-the-art algorithm for Soccer Video Understanding.
 
- - **Game State Reconstruction**: Maintain a complete understanding of the game by predicting : 
+ - **Game State Reconstruction**: Maintain a complete understanding of the game by predicting :
    - top-view player localization (optionally with camera calibration)
    - role classification (player, goalkeeper, referee, other)
    - team affiliation and team side (left, right)
    - jersey number recognition
 
-We provide an [evaluation server](https://eval.ai/web/challenges/challenge-page/2251/overview) for the Game State Reconstruction task. 
+We provide an [evaluation server](https://eval.ai/web/challenges/challenge-page/2251/overview) for the Game State Reconstruction task.
 The evaluation server handles predictions for the open **test** sets and the segregated **challenge** sets of each challenge.
 
 Winners will be announced at CVSports Workshop at CVPR 2024.
@@ -22,7 +22,7 @@ This challenge will be sponsored by Sportradar, with a prize money of 1000$!
    A detailed description of this metric can be found in the main [README](sn-gamestate/README.md) and in the official paper.
 
 ## Submission format
-   When running the baseline with the evaluation enabled, a submission .zip file will be automatically generated in the output folder, e.g. 'output_folder/2024-03-14/09-51-08/eval/pred/SoccerNetGS-challenge.zip'. 
+   When running the baseline with the evaluation enabled, a submission .zip file will be automatically generated in the output folder, e.g. 'output_folder/2024-03-14/09-51-08/eval/pred/SoccerNetGS-challenge.zip'.
    The submission file is a zipped folder containing a json file for each video in the evaluated (test/challenge) set.
    Each json file should be named after the corresponding video, e.g. 'SNGS-175.json', 'SNGS-013.json', etc.
    The prediction json format is very similar to the ground truth json format, with the following differences:
@@ -36,7 +36,7 @@ This challenge will be sponsored by Sportradar, with a prize money of 1000$!
 
  - Any individual can participate in the challenge, except the organizers.
  - The participants are recommended to form a team to participate.
- - Each team can have one or more members. 
+ - Each team can have one or more members.
  - An individual/team can compete on both tasks.
  - An individual associated with multiple teams (for a given task) or a team with multiple accounts will be disqualified.
  - On both tasks, a participant can only use the video stream as input (visual and/or audio).
