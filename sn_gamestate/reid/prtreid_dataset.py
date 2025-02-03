@@ -346,7 +346,7 @@ class ReidDataset(ImageDataset):
         )
         dets_df_f6 = dets_df_f5[
             (
-                dets_df_f5.role.isin(["player", "goalkeeper"])
+                dets_df_f5.role.isin(["player", "goalkeeper", "referee", "other"])
             )  # あ、やべ、refereeとかballとか必要だわ
             & (dets_df_f5.team.notnull() & dets_df_f5.team != -1)
         ]
