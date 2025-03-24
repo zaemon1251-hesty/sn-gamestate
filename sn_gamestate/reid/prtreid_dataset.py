@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import sys
 import cv2
 import torch
 import numpy as np
@@ -15,13 +14,12 @@ from tqdm import tqdm
 from tracklab.datastruct import EngineDatapipe
 from tracklab.datastruct import TrackingDataset
 
-# FIXME this should be removed and use KeypointsSeriesAccessor and KeypointsFrameAccessor
+# FIXME this should be removed and use KeypointsSeriesAccessor
+# and KeypointsFrameAccessor
 from tracklab.utils.coordinates import rescale_keypoints
 
 from tracklab.utils.cv2 import overlay_heatmap
-import tracklab
 
-from copy import deepcopy
 
 from prtreid.data import ImageDataset
 from prtreid.utils.imagetools import (
@@ -346,7 +344,7 @@ class ReidDataset(ImageDataset):
         )
         dets_df_f6 = dets_df_f5[
             (
-                dets_df_f5.role.isin(["player", "goalkeeper", "referee", "other"])
+                dets_df_f5.role.isin(["player", "goalkeeper"])
             )  # あ、やべ、refereeとかballとか必要だわ
             & (dets_df_f5.team.notnull() & dets_df_f5.team != -1)
         ]

@@ -1,3 +1,13 @@
+これは選手同定モジュールに関わるリポジトリです。
+
+<https://github.com/zaemon1251-hesty/tracklab> を動かすために、このリポジトリが必要です。
+
+以下はfork元のREADME.mdです。
+実行環境の構築は以下の指示に従ってください。
+その際、<https://github.com/TrackingLaboratory/tracklab> は <https://github.com/zaemon1251-hesty/tracklab> に読み替えつつ進めてください。
+
+---
+
 <div align="center">
 
 
